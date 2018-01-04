@@ -1,29 +1,4 @@
-package cobweb
-
-func TraversePath(s string, start int) (part string, next int) {
-	from := -1
-	next = len(s)
-	for i := start; i < next; i++ {
-		if from == -1 {
-			if s[i] != '/' {
-				from = i
-			}
-			continue
-		}
-		if part == "" {
-			if s[i] == '/' {
-				part = s[from:i]
-			}
-		} else if s[i] != '/' {
-			next = i
-			break
-		}
-	}
-	if part == "" && from != -1 {
-		part = s[from:next]
-	}
-	return
-}
+package strutil
 
 func IsAlpha(ch byte) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z'
@@ -45,7 +20,7 @@ func IsAlnum(ch byte) bool {
 	return IsAlpha(ch) || IsDigit(ch)
 }
 
-func CheckPath(path string) bool {
+func IsPath(path string) bool {
 	l := len(path)
 	switch l {
 	case 0:

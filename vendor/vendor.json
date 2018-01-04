@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "dJO/+ebHaZe9TkAsivZnpq3tP+s=",
+			"path": "github.com/chinx/utils/strutil",
+			"revision": "e14d908429f4e6407dacfb77cc0bacd0b6bace6b",
+			"revisionTime": "2018-01-04T17:19:49Z"
+		}
+	],
+	"rootPath": "github.com/chinx/cobweb"
+}

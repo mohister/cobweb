@@ -1,4 +1,4 @@
-package cobweb
+package strutil
 
 func TrimRight(s string, b byte) string {
 	l := len(s)

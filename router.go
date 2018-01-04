@@ -2,6 +2,7 @@ package cobweb
 
 import (
 	"net/http"
+	"github.com/chinx/utils/strutil"
 )
 
 type group struct {
@@ -110,7 +111,7 @@ func (r *Router) Any(pattern string, handlers ...Handle) {
 }
 
 func (r *Router) handle(method, pattern string, handlers ...Handle) {
-	pattern = "/" + Trim(pattern, '/')
+	pattern = "/" + strutil.Trim(pattern, '/')
 	if len(r.groups) > 0 {
 		groupPattern := ""
 		h := make([]Handle, 0)
