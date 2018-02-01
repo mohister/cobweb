@@ -3,7 +3,6 @@ package cobweb
 import (
 	"bytes"
 	"log"
-	"github.com/chinx/utils/strutil"
 )
 
 var (
@@ -38,7 +37,7 @@ func (n *trie) addNode(pattern string, handler Handle) {
 	target := n.node
 	length := len(pattern)
 	for path, next := "", 0; next < length; {
-		path, next = strutil.Between(pattern, '/', next)
+		path, next = between(pattern, next)
 		if path == "" {
 			if _, ok := n.hash["/"]; ok {
 				log.Panic(rootMethodNotOnly)
@@ -64,7 +63,7 @@ func (n *trie) addNode(pattern string, handler Handle) {
 			buffer.WriteString(path)
 		}
 
-		if !strutil.IsPath(path) {
+		if !isPath(path) {
 			log.Panicf(pathNotMatched, path, pattern)
 		}
 
@@ -105,13 +104,13 @@ func (n *trie) addNode(pattern string, handler Handle) {
 	}
 }
 
-func (n *trie) match(pattern string) (handler Handle, params *Params) {
+func (n *trie) match(pattern string) (handler Handle, params Params) {
 	var dynamics []string
 	target := n.node
 	ended, length := false, len(pattern)
 	path, next := "", 0
 walk:
-	path, next = strutil.Between(pattern, '/', next)
+	path, next = between(pattern, next)
 	if path == "" {
 		handler = n.method
 		return
@@ -149,8 +148,7 @@ walk:
 		}
 	}
 	l := len(dynamics)
-	p := make(Params, l)
-	params = &p
+	params = make(Params, l)
 	for last := target; last != nil; last = last.parent {
 		last.index = 0
 		if handler != nil {

@@ -8,7 +8,7 @@ const (
 	elastic
 )
 
-type Handle func(http.ResponseWriter, *http.Request, *Params)
+type Handle func(http.ResponseWriter, *http.Request, Params)
 
 type node struct {
 	pattern    string

@@ -1,9 +1,6 @@
 package cobweb
 
-import (
-	"net/http"
-	"github.com/chinx/utils/strutil"
-)
+import "net/http"
 
 type group struct {
 	pattern  string
@@ -40,8 +37,8 @@ func (r *Router) ServeFiles(path string, root http.FileSystem) {
 
 	fileServer := http.FileServer(root)
 
-	r.handle(http.MethodGet, path, func(w http.ResponseWriter, req *http.Request, ps *Params) {
-		if filePath, _ := ps.Get("filepath"); filePath != "" {
+	r.handle(http.MethodGet, path, func(w http.ResponseWriter, req *http.Request, ps Params) {
+		if filePath := ps.Get("filepath"); filePath != "" {
 			req.URL.Path = filePath
 			fileServer.ServeHTTP(w, req)
 			return
@@ -111,7 +108,7 @@ func (r *Router) Any(pattern string, handlers ...Handle) {
 }
 
 func (r *Router) handle(method, pattern string, handlers ...Handle) {
-	pattern = "/" + strutil.Trim(pattern, '/')
+	pattern = "/" + trim(pattern)
 	if len(r.groups) > 0 {
 		groupPattern := ""
 		h := make([]Handle, 0)
@@ -149,7 +146,7 @@ func handlersChain(handlers []Handle) Handle {
 		return nHandlers[0]
 	}
 
-	return func(rw http.ResponseWriter, req *http.Request, params *Params) {
+	return func(rw http.ResponseWriter, req *http.Request, params Params) {
 		length := len(handlers)
 		for i := 0; i < length; i++ {
 			if _, ok := rw.(ResponseWriter); ok && rw.(ResponseWriter).Written() {

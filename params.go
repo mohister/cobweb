@@ -7,25 +7,25 @@ type param struct {
 	val string
 }
 
-func (p *Params) Get(key string) (string, bool) {
-	for _, entry := range *p {
+func (p Params) Get(key string) string {
+	for _, entry := range p {
 		if entry != nil && entry.key == key {
-			return entry.val, true
+			return entry.val
 		}
 	}
-	return "", false
+	return ""
 }
 
-func (p *Params) Set(key, val string) {
-	for _, entry := range *p {
+func (p Params) Set(key, val string) {
+	for _, entry := range p {
 		if entry != nil && entry.key == key {
 			entry.val = val
 			return
 		}
 	}
-	*p = append(*p, &param{key: key, val: val})
+	p = append(p, &param{key: key, val: val})
 }
 
-func (p *Params) setIndex(key, val string, index int) {
-	(*p)[index] = &param{key: key, val: val}
+func (p Params) setIndex(key, val string, index int) {
+	p[index] = &param{key: key, val: val}
 }

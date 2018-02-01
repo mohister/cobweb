@@ -29,7 +29,7 @@ func TestAddNode(t *testing.T) {
 		//"/accounts/account/projects/project/files/file",
 		"/accounts/account/projects/project/files",
 	}
-	handler := func(http.ResponseWriter, *http.Request, *Params) {}
+	handler := func(http.ResponseWriter, *http.Request, Params) {}
 	node := NewTrie()
 	for i := range addUrl {
 		node.addNode(addUrl[i], handler)
@@ -71,7 +71,7 @@ func BenchmarkNewNode(b *testing.B) {
 		"/accounts/account/projects/project/files/file",
 		"/accounts/account/projects/project/files/file/abc/def",
 	}
-	handler := func(http.ResponseWriter, *http.Request, *Params) {}
+	handler := func(http.ResponseWriter, *http.Request, Params) {}
 	node := NewTrie()
 	for i := range addUrl {
 		node.addNode(addUrl[i], handler)
@@ -80,5 +80,18 @@ func BenchmarkNewNode(b *testing.B) {
 		for i := range matched {
 			node.match(matched[i])
 		}
+	}
+}
+
+func TestTrim(t *testing.T) {
+	strArr := []string{
+		"////////////pattern////////////",
+		"///////////////////////////////",
+		"////////////pat/tern////////////",
+		"////////////pat//////tern////////////",
+	}
+
+	for i := range strArr{
+		t.Log(strArr[i], trim(strArr[i]))
 	}
 }
