@@ -29,10 +29,9 @@ func TestAddNode(t *testing.T) {
 		//"/accounts/account/projects/project/files/file",
 		"/accounts/account/projects/project/files",
 	}
-	handler := func(http.ResponseWriter, *http.Request, Params) {}
 	node := NewTrie()
 	for i := range addUrl {
-		node.addNode(addUrl[i], handler)
+		node.addNode(addUrl[i], new(http.HandlerFunc))
 	}
 	byt, _ := json.Marshal(node)
 	t.Log(string(byt))
@@ -40,9 +39,9 @@ func TestAddNode(t *testing.T) {
 	for i := range matched {
 		h, m := node.match(matched[i])
 		if h != nil {
-			t.Log(m.Get("account"))
-			t.Log(m.Get("project"))
-			t.Log(m.Get("file"))
+			t.Log(m.String("account"))
+			t.Log(m.String("project"))
+			t.Log(m.String("file"))
 		} else {
 			t.Log("not matched")
 		}
@@ -50,6 +49,7 @@ func TestAddNode(t *testing.T) {
 }
 
 func BenchmarkNewNode(b *testing.B) {
+	b.StopTimer()
 	addUrl := []string{
 		"/accounts/",
 		"/accounts/:account",
@@ -71,11 +71,11 @@ func BenchmarkNewNode(b *testing.B) {
 		"/accounts/account/projects/project/files/file",
 		"/accounts/account/projects/project/files/file/abc/def",
 	}
-	handler := func(http.ResponseWriter, *http.Request, Params) {}
 	node := NewTrie()
 	for i := range addUrl {
-		node.addNode(addUrl[i], handler)
+		node.addNode(addUrl[i], new(http.HandlerFunc))
 	}
+	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		for i := range matched {
 			node.match(matched[i])

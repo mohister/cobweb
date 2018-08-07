@@ -3,28 +3,33 @@ package cobweb
 import "net/http"
 
 const (
-	static uint = iota
+	static uint8 = iota
 	dynamic
 	elastic
 )
 
-type Handle func(http.ResponseWriter, *http.Request, Params)
-
 type node struct {
+	priority   uint8
+	maxParts   uint8
 	pattern    string
-	priority   uint
-	method     Handle
-	children   children
-	wideMethod Handle
-	parent     *node
+	method     http.Handler
+	wideMethod http.Handler
+	children   nodeList
 	index      int
+	paramsKeys entries
 }
 
-type children []*node
+func (n *node) SetMaxParts(max uint8) {
+	if n.maxParts < max {
+		n.maxParts = max
+	}
+}
 
-func (n children) add(child *node) children {
+type nodeList []*node
+
+func (n nodeList) add(child *node) nodeList {
 	index, l := 0, len(n)
-	nc := make(children, l+1)
+	nc := make(nodeList, l+1)
 	switch l {
 	case 0:
 		nc[index] = child

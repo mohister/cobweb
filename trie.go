@@ -2,7 +2,8 @@ package cobweb
 
 import (
 	"bytes"
-	"log"
+	"fmt"
+	"net/http"
 )
 
 var (
@@ -15,7 +16,8 @@ var (
 
 type trie struct {
 	*node
-	hash map[string]string
+	buffer *bytes.Buffer
+	hash   map[string]string
 }
 
 func NewTrie() *trie {
@@ -23,49 +25,61 @@ func NewTrie() *trie {
 		node: &node{
 			pattern:  "root",
 			priority: static,
-			children: make([]*node, 0, 10),
-			parent:   nil,
+			children: make([]*node, 0, 32),
 		},
-		hash: make(map[string]string),
+		buffer: bytes.NewBuffer(make([]byte, 0, 1024)),
+		hash:   make(map[string]string, 32),
 	}
 }
-func (n *trie) addNode(pattern string, handler Handle) {
+
+func (t *trie) addNode(pattern string, handler http.Handler) {
 	if handler == nil {
-		log.Panicf(methodNil, pattern)
+		panic(fmt.Sprintf(methodNil, pattern))
 	}
-	buffer := &bytes.Buffer{}
-	target := n.node
-	length := len(pattern)
-	for path, next := "", 0; next < length; {
-		path, next = between(pattern, next)
+
+	nParts, nParams := countPartsAndParams(pattern)
+
+	var keys entries
+	if nParams != 0 {
+		keys = make([]string, 0, nParams)
+		setMaxParams(nParams)
+	}
+
+	path, target := "", t.node
+	start, length := 0, len(pattern)
+	for start < length {
+		path, start = between(pattern, start)
 		if path == "" {
-			if _, ok := n.hash["/"]; ok {
-				log.Panic(rootMethodNotOnly)
+			if _, ok := t.hash["/"]; ok {
+				panic(rootMethodNotOnly)
 			}
 			target.method = handler
-			n.hash["/"] = "/"
+			t.hash["/"] = "/"
 			break
 		}
-		buffer.WriteByte('/')
+		t.buffer.WriteByte('/')
 
-		priority, ended := static, next == length
+		priority, ended := static, start == length
 		if path[0] == '*' || path[0] == ':' {
 			priority = dynamic
-			buffer.WriteString("%v")
+			t.buffer.WriteString("%v")
 			if path[0] == '*' {
 				if !ended {
-					log.Panicf(endpointErr, pattern)
+					panic(fmt.Sprintf(endpointErr, pattern))
 				}
 				priority = elastic
 			}
 			path = path[1:]
+			keys.add(path)
 		} else {
-			buffer.WriteString(path)
+			t.buffer.WriteString(path)
 		}
 
 		if !isPath(path) {
-			log.Panicf(pathNotMatched, path, pattern)
+			panic(fmt.Sprintf(pathNotMatched, path, pattern))
 		}
+		target.SetMaxParts(nParts)
+		nParts--
 
 		var nn *node
 		for i := range target.children {
@@ -80,58 +94,73 @@ func (n *trie) addNode(pattern string, handler Handle) {
 
 		if nn == nil {
 			nn = &node{
-				pattern:  path,
-				priority: priority,
-				children: make([]*node, 0, 10),
-				parent:   target,
+				pattern:    path,
+				priority:   priority,
+				children:   make([]*node, 0, 10),
+				paramsKeys: keys,
 			}
 			if priority == elastic && target.wideMethod == nil {
-				nn.parent.wideMethod = handler
+				target.wideMethod = handler
 			}
 			target.children = target.children.add(nn)
 		}
 
 		if ended {
-			flag := buffer.String()
-			if val, ok := n.hash[flag]; ok {
-				log.Panicf(conflictedErr, val, pattern)
+			flag := t.buffer.String()
+			t.buffer.Reset()
+			if val, ok := t.hash[flag]; ok {
+				panic(fmt.Sprintf(conflictedErr, val, pattern))
 			}
 			nn.method = handler
-			n.hash[flag] = pattern
+			t.hash[flag] = pattern
 			break
 		}
 		target = nn
 	}
 }
 
-func (n *trie) match(pattern string) (handler Handle, params Params) {
-	var dynamics []string
-	target := n.node
-	ended, length := false, len(pattern)
-	path, next := "", 0
-walk:
-	path, next = between(pattern, next)
-	if path == "" {
-		handler = n.method
+func (t *trie) match(pattern string) (handler http.Handler, params *Params) {
+	count := countParts(pattern)
+	if t.maxParts < count {
 		return
 	}
-	ended = next == length
+
+	path, target := "", t.node
+	start, length := 0, len(pattern)
+	ended := false
+walk:
+	count--
+	path, start = between(pattern, start)
+	if path == "" {
+		handler = t.method
+		return
+	}
+	ended = start == length
 	for i := target.index; i < len(target.children); i++ {
 		nn := target.children[i]
+		if nn.maxParts < count {
+			continue
+		}
 		if nn.priority == elastic {
 			if nn.method != nil {
 				handler = nn.method
 				if !ended {
-					path += "/" + pattern[next:]
+					path += "/" + pattern[start:]
 				}
-				dynamics = append(dynamics, path)
+				if params == nil{
+					params = getParams()
+				}
+				params.values.add(path)
 			}
 			target = nn
 			break
 		}
 		if isDynamic := nn.priority == dynamic; isDynamic || nn.pattern == path {
 			if isDynamic {
-				dynamics = append(dynamics, path)
+				if params == nil{
+					params = getParams()
+				}
+				params.values.add(path)
 			}
 			if !ended {
 				target.index = i
@@ -147,16 +176,8 @@ walk:
 			}
 		}
 	}
-	l := len(dynamics)
-	params = make(Params, l)
-	for last := target; last != nil; last = last.parent {
-		last.index = 0
-		if handler != nil {
-			if last.priority == dynamic || last.priority == elastic {
-				l--
-				params.setIndex(last.pattern, dynamics[l], l)
-			}
-		}
+	if len(target.paramsKeys) > 0{
+		params.values = target.paramsKeys
 	}
 	return
 }

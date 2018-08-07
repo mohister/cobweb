@@ -1,5 +1,61 @@
 package cobweb
 
+func countPartsAndParams(path string) (uint8, uint8) {
+	length := len(path)
+	if length == 0 {
+		return 0, 0
+	}
+	var nPart, nParams uint
+	for i := 0; i < length-1; i++ {
+		if path[i] != '/' {
+			continue
+		}
+
+		nPart++
+		if path[i+1] != ':' && path[i+1] != '*' {
+			continue
+		}
+		nParams++
+	}
+
+	if nPart == 0 {
+		return 1, 0
+	}
+
+	if nPart > 255 {
+		nPart = 255
+	}
+
+	if nParams > 255 {
+		nParams = 255
+	}
+	return uint8(nPart), uint8(nParams)
+}
+
+func countParts(path string) uint8 {
+	length := len(path)
+	if length == 0 {
+		return 0
+	}
+
+	var n uint
+	for i := 0; i < length; i++ {
+		if path[i] != '/' {
+			continue
+		}
+		n++
+	}
+
+	if n == 0 {
+		return 1
+	}
+
+	if n > 255 {
+		n = 255
+	}
+	return uint8(n)
+}
+
 func between(s string, start int) (part string, next int) {
 	from := -1
 	next = len(s)

@@ -1,31 +1,59 @@
 package cobweb
 
-type Params []*param
+import (
+	"strconv"
+)
 
-type param struct {
-	key string
-	val string
+type entries []string
+
+func (e entries) add(entry string) {
+	l := len(e)
+	e = e[:l+1]
+	e[l] = entry
 }
 
-func (p Params) Get(key string) string {
-	for _, entry := range p {
-		if entry != nil && entry.key == key {
-			return entry.val
+type Params struct {
+	keys   entries
+	values entries
+}
+
+func (p *Params) String(key string) string {
+	for i := range p.keys {
+		if p.keys[i] == key {
+			return p.values[i]
 		}
 	}
 	return ""
 }
 
-func (p Params) Set(key, val string) {
-	for _, entry := range p {
-		if entry != nil && entry.key == key {
-			entry.val = val
-			return
-		}
+func (p *Params) Int(key string) int {
+	if val := p.String(key); val != "" {
+		num, _ := strconv.Atoi(val)
+		return num
 	}
-	p = append(p, &param{key: key, val: val})
+	return 0
 }
 
-func (p Params) setIndex(key, val string, index int) {
-	p[index] = &param{key: key, val: val}
+func (p *Params) Int64(key string) int64 {
+	if val := p.String(key); val != "" {
+		num, _ := strconv.ParseInt(val, 10, 0)
+		return num
+	}
+	return 0
+}
+
+func (p *Params) Float64(key string) float64 {
+	if val := p.String(key); val != "" {
+		num, _ := strconv.ParseFloat(val, 0)
+		return num
+	}
+	return 0
+}
+
+func (p *Params) Bool(key string) bool {
+	if val := p.String(key); val != "" {
+		b, _ := strconv.ParseBool(val)
+		return b
+	}
+	return false
 }
